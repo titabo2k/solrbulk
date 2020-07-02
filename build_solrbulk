@@ -1,0 +1,59 @@
+FROM debian:buster
+
+MAINTAINER titabo2k
+
+SHELL ["/bin/bash", "-c"]
+
+# Configure apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+&& apt-get -y install --no-install-recommends \
+apt-utils \
+software-properties-common 2>&1
+
+# add some more
+RUN apt-get -y install \
+wget make fakeroot
+
+# Clean up
+RUN apt-get autoremove -y \
+&& apt-get clean -y \
+&& rm -rf /var/lib/apt/lists/*
+
+ENV DEBIAN_FRONTEND=dialog
+
+WORKDIR /mnt
+
+RUN wget --no-check-certificate https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz -P /mnt && \
+tar -xzf /mnt/go1.14.4.linux-amd64.tar.gz -C /usr/local && \
+rm -f /mnt/go1.14.4.linux-amd64.tar.gz
+
+ARG username=bill
+
+ARG userid=1000
+
+RUN useradd -m -s /bin/bash -u $userid $username
+
+RUN chown -R $username:$username /mnt
+
+ENV LANG C.UTF-8
+
+ENV LC_ALL C.UTF-8
+
+ENV MAKE_IT clean
+
+WORKDIR /mnt/solrbulk
+
+CMD ["bash", "-c", "export PATH=$PATH:/usr/local/go/bin && make ${MAKE_IT}"]
+
+### make clean by:
+# docker run --rm --user 1000:1000 --env MAKE_IT=clean -v $(pwd)/:/mnt build_solrbulk:0.1
+#
+### make deb by:
+# docker run --rm --net=host --user 1000:1000 --env MAKE_IT=deb -v $(pwd)/:/mnt build_solrbulk:0.1
+#
+### make test by:
+# docker run --rm --net=host --user 1000:1000 --env MAKE_IT=test -v $(pwd)/:/mnt build_solrbulk:0.1
+#
+### make ...
